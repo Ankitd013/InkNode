@@ -1,0 +1,17 @@
+# Core Framework & Interfaces
+Flask>=3.0.0
+paho-mqtt>=2.1.0
+
+# Hardware & Sensor Drivers
+adafruit-circuitpython-ahtx0>=1.0.15
+gpiozero
+rpi-lgpio
+lgpio
+spidev>=3.6
+
+# Image & Token Processing
+Pillow>=10.0.0
+qrcode[pil]>=7.4.2
+requests>=2.31.0
+
+python-dotenv

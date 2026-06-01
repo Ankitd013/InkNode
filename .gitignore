@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.tmp_waveshare/
+.env
+.env.test
+.DS_Store
+Thumbs.db
+.lgd-nfy0
