@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InkNode Control Center</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 40px 20px; display: flex; justify-content: center; }
+        .wrapper { width: 100%; max-width: 600px; }
+        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+        .ip-badge { background: #1e293b; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-size: 13px; color: var(--muted); }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media(max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+        .field { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--muted); }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; }
+        input:focus { outline: none; border-color: var(--accent); }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .2s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .btn { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: .2s; }
+        .btn:hover { background: var(--accent-hover); }
+        .btn-danger { background: #ef4444; margin-top: 12px; }
+        .btn-danger:hover { background: #dc2626; }
+        .alert { background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success); padding: 12px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="header">
+            <div>
+                <h1>InkNode Settings</h1>
+                <p style="color: var(--muted); font-size: 14px; margin-top: 4px;">Hardware Dashboard Control</p>
+            </div>
+            <span class="ip-badge">Host: {{ current_ip }}</span>
+        </div>
+
+        {% if saved %}
+        <div class="alert" style="display: block;">Configuration updated successfully! Display pipeline recycled.</div>
+        {% endif %}
+
+        <form action="/save-config" method="POST">
+            <div class="card">
+                <div class="card-title">Display Settings</div>
+                <div class="field">
+                    <label>E-Paper Header Text</label>
+                    <input type="text" name="UI_HEADER" value="{{ config.UI_HEADER }}">
+                </div>
+                <div class="grid">
+                    <div class="field">
+                        <label>Latitude</label>
+                        <input type="text" name="LOCATION_LAT" value="{{ config.LOCATION_LAT }}">
+                    </div>
+                    <div class="field">
+                        <label>Longitude</label>
+                        <input type="text" name="LOCATION_LON" value="{{ config.LOCATION_LON }}">
+                    </div>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <p style="font-weight: 500; font-size: 14px;">Hide IP Address</p>
+                        <p style="font-size: 12px; color: var(--muted);">Remove local IP text from e-paper bottom</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="HIDE_IP" value="True" {% if config.HIDE_IP == "True" %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">MQTT Infrastructure Engine</div>
+                <div class="toggle-row" style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                    <div>
+                        <p style="font-weight: 500; font-size: 14px;">Enable MQTT Broker Pipeline</p>
+                        <p style="font-size: 12px; color: var(--muted);">Stream local data arrays over connection transport</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="MQTT_ENABLED" value="True" {% if config.MQTT_ENABLED == "True" %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="grid">
+                    <div class="field">
+                        <label>Broker Host IP</label>
+                        <input type="text" name="MQTT_BROKER" value="{{ config.MQTT_BROKER }}">
+                    </div>
+                    <div class="field">
+                        <label>Broker Port</label>
+                        <input type="text" name="MQTT_PORT" value="{{ config.MQTT_PORT }}">
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="field">
+                        <label>Username</label>
+                        <input type="text" name="MQTT_USER" value="{{ config.MQTT_USER }}">
+                    </div>
+                    <div class="field">
+                        <label>Password</label>
+                        <input type="password" name="MQTT_PASS" value="{{ config.MQTT_PASS }}">
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="field">
+                        <label>Temperature Topic</label>
+                        <input type="text" name="MQTT_TOPIC_TEMP" value="{{ config.MQTT_TOPIC_TEMP }}">
+                    </div>
+                    <div class="field">
+                        <label>Humidity Topic</label>
+                        <input type="text" name="MQTT_TOPIC_HUM" value="{{ config.MQTT_TOPIC_HUM }}">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">Save Changes</button>
+        </form>
+
+        <div class="card" style="margin-top: 24px; border-color: rgba(239, 68, 68, 0.2);">
+            <div class="card-title" style="color: #ef4444;">Network Re-Provisioning</div>
+            <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px;">Wiping wireless network profiles kicks the system back into offline provisioning mode, rendering a fresh onboarding QR pattern on the screen.</p>
+            <form action="/wipe-wifi" method="POST" onsubmit="return confirm('Confirm hardware network profile erasure? Device will drop connectivity and reboot.');">
+                <button type="submit" class="btn btn-danger">Wipe Wi-Fi Profiles & Reboot</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
