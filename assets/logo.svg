@@ -2,13 +2,18 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="28"
-   height="25"
-   viewBox="0 0 28 25"
+   width="30"
+   height="27"
+   viewBox="0 0 30 27"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
    sodipodi:docname="logo.svg"
+   inkscape:export-filename="logo1.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:export-batch-path="C:\Users\Ankit Das\Desktop"
+   inkscape:export-batch-name="logo1"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -28,7 +33,7 @@
      showgrid="true"
      inkscape:antialias-rendering="false"
      inkscape:zoom="22.627417"
-     inkscape:cx="11.711456"
+     inkscape:cx="11.689359"
      inkscape:cy="14.782951"
      inkscape:window-width="1920"
      inkscape:window-height="1094"
@@ -39,8 +44,8 @@
     <inkscape:grid
        id="grid5"
        units="px"
-       originx="0"
-       originy="0"
+       originx="1"
+       originy="1"
        spacingx="1"
        spacingy="1"
        empcolor="#0099e5"
@@ -57,7 +62,16 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(1,1)">
+    <rect
+       style="fill:#ffffff"
+       id="rect2"
+       width="30"
+       height="27"
+       x="-1"
+       y="-1"
+       inkscape:label="bg" />
     <g
        id="g170">
       <rect

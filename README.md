@@ -190,9 +190,9 @@ Make sure the necessary hardware communication buses are enabled. Run `sudo rasp
 Clone the repository to your Raspberry Pi and execute the included setup script:
 
 ```bash
-git clone [https://github.com/Ankitd013/InkNode.git](https://github.com/Ankitd013/InkNode.git)
+git clone https://github.com/Ankitd013/InkNode.git
 cd InkNode
 
 chmod +x setup.sh
-./setup.sh
+sudo ./setup.sh
 ```
