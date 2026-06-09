@@ -61,30 +61,30 @@ python3 -m venv "$VENV_DIR"
 # -------------------------------------------------------------------------
 # ALL PREREQUISITES SUCCESSFUL - PROCEED TO SERVICE CREATION
 # -------------------------------------------------------------------------
-# trap - ERR
+trap - ERR
 
-# echo "⚙️ Provisioning Systemd service engine..."
-# sudo bash -c "cat > /etc/systemd/system/epaper-dash.service << EOF
-# [Unit]
-# Description=InkNode E-Paper Dashboard Service
-# After=network.target
+echo "⚙️ Provisioning Systemd service engine..."
+sudo bash -c "cat > /etc/systemd/system/epaper-dash.service << EOF
+[Unit]
+Description=InkNode E-Paper Dashboard Service
+After=network.target
 
-# [Service]
-# Type=simple
-# User=root
-# WorkingDirectory=$PROJECT_DIR
-# ExecStart=$VENV_DIR/bin/python $PROJECT_DIR/boot_manager.py
-# Restart=on-failure
-# RestartSec=10
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$PROJECT_DIR
+ExecStart=$VENV_DIR/bin/python $PROJECT_DIR/boot_manager.py
+Restart=on-failure
+RestartSec=10
 
-# [Install]
-# WantedBy=multi-user.target
-# EOF"
+[Install]
+WantedBy=multi-user.target
+EOF"
 
-# echo "🔄 Activating system daemon..."
-# sudo systemctl daemon-reload
-# sudo systemctl enable epaper-dash.service
-# sudo systemctl restart epaper-dash.service
+echo "🔄 Activating system daemon..."
+sudo systemctl daemon-reload
+sudo systemctl enable epaper-dash.service
+sudo systemctl restart epaper-dash.service
 
 sudo chown -R $USER $PROJECT_DIR
 echo "✅ Deployment finished successfully. System is active."
