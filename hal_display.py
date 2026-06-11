@@ -24,3 +24,28 @@ def render_to_physical_screen(black_buffer, red_buffer=None):
     except Exception as e:
         # If running code on a PC or Mac without a screen plugged into GPIO pins, catch the skip
         logging.debug(f"[HAL] Hardware panel driver write skipped (Simulation Mode active): {e}")
+
+def generate_web_preview(image_black, image_red):
+    """
+    Blends the independent black and red 1-bit e-Paper buffers
+    into a single RGB image dynamically sized to the input canvas.
+    """
+    # 1. Dynamically read the orientation/size of the live buffer
+    width, height = image_black.size
+    
+    # 2. Create the RGB web canvas matching those exact dimensions
+    preview = Image.new("RGB", (width, height), (255, 255, 255))
+    
+    pixels_preview = preview.load()
+    pixels_black = image_black.load()
+    pixels_red = image_red.load()
+    
+    # 3. Safely loop only within the known bounds
+    for y in range(height):
+        for x in range(width):
+            if pixels_red[x, y] == 0:
+                pixels_preview[x, y] = (230, 57, 70)   # Clean Slate Red
+            elif pixels_black[x, y] == 0:
+                pixels_preview[x, y] = (30, 30, 30)    # Off-Black Text
+                
+    return preview

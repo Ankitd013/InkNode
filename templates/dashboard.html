@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,34 +16,226 @@
             --accent-hover: #2563eb;
             --success: #10b981;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 40px 20px; display: flex; justify-content: center; }
-        .wrapper { width: 100%; max-width: 600px; }
-        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-        .ip-badge { background: #1e293b; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-size: 13px; color: var(--muted); }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media(max-width: 500px) { .grid { grid-template-columns: 1fr; } }
-        .field { margin-bottom: 16px; }
-        label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--muted); }
-        input[type="text"], input[type="password"] { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; }
-        input:focus { outline: none; border-color: var(--accent); }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .2s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(20px); }
-        .btn { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: .2s; }
-        .btn:hover { background: var(--accent-hover); }
-        .btn-danger { background: #ef4444; margin-top: 12px; }
-        .btn-danger:hover { background: #dc2626; }
-        .alert { background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success); padding: 12px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; display: none; }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 800px; /* Increased from 600px to better scale across wide desktop monitors */
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Allows badge to seamlessly drop down on ultra-narrow frames */
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .ip-badge {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .grid {
+            display: grid;
+            /* Fluid automatic layout management: adjusts row/column counts dynamically */
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--muted);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            gap: 16px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #475569;
+            transition: .2s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            width: auto;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: #475569;
+            width: auto;
+            padding: 8px 15px;
+        }
+
+        .btn-secondary:hover {
+            background: #334155;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            margin-top: 12px;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .alert {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .control-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap; /* Ensures buttons don't clip outside view boundaries on small panels */
+        }
     </style>
 </head>
+
 <body>
     <div class="wrapper">
         <div class="header">
@@ -80,7 +273,7 @@
                         <p style="font-size: 12px; color: var(--muted);">Remove local IP text from e-paper bottom</p>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" name="HIDE_IP" value="True" {% if config.HIDE_IP == "True" %}checked{% endif %}>
+                        <input type="checkbox" name="HIDE_IP" value="True" {% if config.HIDE_IP=="True" %}checked{% endif %}>
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -88,13 +281,14 @@
 
             <div class="card">
                 <div class="card-title">MQTT Infrastructure Engine</div>
-                <div class="toggle-row" style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                <div class="toggle-row"
+                    style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
                     <div>
                         <p style="font-weight: 500; font-size: 14px;">Enable MQTT Broker Pipeline</p>
                         <p style="font-size: 12px; color: var(--muted);">Stream local data arrays over connection transport</p>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" name="MQTT_ENABLED" value="True" {% if config.MQTT_ENABLED == "True" %}checked{% endif %}>
+                        <input type="checkbox" name="MQTT_ENABLED" value="True" {% if config.MQTT_ENABLED=="True" %}checked{% endif %}>
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -133,13 +327,40 @@
             <button type="submit" class="btn">Save Changes</button>
         </form>
 
+        <div class="card structural-metric-panel" style="padding: 20px; text-align: center; margin-top: 24px;">
+            <h3 style="color: var(--text); font-size: 18px; margin-bottom: 10px;">📱 Live Display</h3>
+
+            <div style="background: #fdfdfd; border: 2px solid #808080; display: inline-block; padding: 10px; border-radius: 6px; margin: 15px 0; max-width: 100%;">
+                <img id="epaper-mirror" src="/api/screen/preview.png" alt="InkNode Screen State"
+                    style="width: 100%; max-width: 128px; height: auto; aspect-ratio: 128 / 296; display: block; margin: 0 auto; image-rendering: pixelated;" />
+            </div>
+
+            <div class="control-actions">
+                <button onclick="refreshScreenMirror()" class="btn btn-secondary">🔄 Refresh View</button>
+
+                <a href="/api/screen/preview.png" download="inknode_capture.png" class="btn btn-primary"
+                    style="text-decoration: none; padding: 8px 15px; display: inline-block;">
+                    📥 Download Screenshot
+                </a>
+            </div>
+        </div>
+
         <div class="card" style="margin-top: 24px; border-color: rgba(239, 68, 68, 0.2);">
             <div class="card-title" style="color: #ef4444;">Network Re-Provisioning</div>
             <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px;">Wiping wireless network profiles kicks the system back into offline provisioning mode, rendering a fresh onboarding QR pattern on the screen.</p>
-            <form action="/wipe-wifi" method="POST" onsubmit="return confirm('Confirm hardware network profile erasure? Device will drop connectivity and reboot.');">
+            <form action="/wipe-wifi" method="POST"
+                onsubmit="return confirm('Confirm hardware network profile erasure? Device will drop connectivity and reboot.');">
                 <button type="submit" class="btn btn-danger">Wipe Wi-Fi Profiles & Reboot</button>
             </form>
         </div>
     </div>
+
+    <script>
+        function refreshScreenMirror() {
+            const img = document.getElementById('epaper-mirror');
+            img.src = '/api/screen/preview.png?t=' + new Date().getTime();
+        }
+    </script>
 </body>
+
 </html>

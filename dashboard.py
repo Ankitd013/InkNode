@@ -1,23 +1,27 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
+import io
 import os
 import time
 import logging
 import socket
 import threading
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, send_file
 from PIL import Image, ImageDraw, ImageFont
 
 # Import our custom modules
 from config import BASE_DIR, load_env, save_env
 from hal_sensors import get_sensor_telemetry
-from hal_display import render_to_physical_screen
+from hal_display import render_to_physical_screen, generate_web_preview
 from weather_api import fetch_weather_data
 import mqtt_engine
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - DASH - %(message)s')
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
+
+LBlackimage = Image.new('1', (128, 296), 255)
+LRedimage = Image.new('1', (128, 296), 255)
 
 def get_local_ip():
     try:
@@ -81,9 +85,22 @@ def wipe_wifi():
     subprocess.Popen(r"sleep 2; sudo nmcli connection delete id $(nmcli -t -f NAME connection show --active | grep -v 'Wired\|lo\|Hotspot'); sudo reboot", shell=True)
     return "<h3>Purging connectivity profiles... Rebooting device.</h3>"
 
-# ==========================================
-# 🎨 DRAWING TOOLS & ICON RENDERING
-# ==========================================
+@app.route('/api/screen/preview.png')
+def screen_preview():
+    """Generates and streams the live e-Paper frame in real-time."""
+    try:
+        # 1. Fetch your active canvas layouts from your main loop engine
+        # 2. Blend them using the helper function
+        preview_img = generate_web_preview(LBlackimage, LRedimage)
+        
+        # 3. Save to an in-memory byte array instead of writing to disk
+        img_io = io.BytesIO()
+        preview_img.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        return send_file(img_io, mimetype='image/png', download_name='inknode-screenshot.png')
+    except Exception as e:
+        return f"Failed to calculate display vector frame: {e}", 500
 # ==========================================
 # 🎨 DRAWING TOOLS & ICON RENDERING
 # ==========================================
@@ -136,6 +153,7 @@ def draw_weather_icon(draw, x, y, code):
 # ==========================================
 
 def display_loop():
+    global LBlackimage, LRedimage
     logging.info("Starting background E-Paper refresh loop...")
     picdir = os.path.join(BASE_DIR, 'pic')
 

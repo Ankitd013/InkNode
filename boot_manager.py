@@ -4,17 +4,24 @@ import logging
 import qrcode
 import sys
 import os
+import io
 import re
+import secrets
+import string
 import threading
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, send_file
 from PIL import Image, ImageDraw, ImageFont
-from config import BASE_DIR
+from config import BASE_DIR, load_env
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - BOOT - %(message)s')
 app = Flask(__name__)
 
 SETUP_SSID = "Pi_Setup"
-SETUP_PASS = "Setup12345"
+alphabet = string.ascii_letters + string.digits
+SETUP_PASS = ''.join(secrets.choice(alphabet) for i in range(8))
+
+# Initialize the global variable safely as None
+SetupImage = None
 
 def check_internet():
     """Verifies physical routing path out of the local network environment."""
@@ -28,6 +35,8 @@ def check_internet():
 
 def draw_qr_screen(ssid, password):
     """Draws an offline onboarding QR code layout to the display panel."""
+    global SetupImage
+    
     try:
         from hal_display import render_to_physical_screen
         logging.info("Offline. Drawing Captive Portal QR to E-Paper...")
@@ -58,6 +67,9 @@ def draw_qr_screen(ssid, password):
         qr_w, qr_h = qr_img.size
         qr_x = (SCREEN_WIDTH - qr_w) // 2
         LBlackimage.paste(qr_img, (qr_x, 55))
+        
+        # Safely copy the canvas into global memory AFTER it is drawn
+        SetupImage = LBlackimage.copy()
         
         render_to_physical_screen(LBlackimage)
     except Exception as e:
@@ -117,17 +129,86 @@ def network_switch_worker(ssid, password):
     else:
         subprocess.run("sudo reboot", shell=True)
 
+def network_switch_worker(ssid, password):
+    """Background execution loop managing physical hardware interface handover."""
+    time.sleep(3)
+    logging.info(f"Initiating network handoff to target SSID: {ssid}...")
+
+    subprocess.run(["sudo", "nmcli", "connection", "down", SETUP_SSID])
+    subprocess.run(["sudo", "nmcli", "device", "disconnect", "wlan0"], stderr=subprocess.DEVNULL)
+
+    subprocess.run(["sudo", "nmcli", "connection", "delete", ssid], stderr=subprocess.DEVNULL)
+
+    logging.info("Building raw WPA-PSK hidden profile...")
+    subprocess.run(["sudo", "nmcli", "connection", "add", "type", "wifi", "con-name", ssid, "ifname", "wlan0", "ssid", ssid], capture_output=True)
+
+    subprocess.run(["sudo", "nmcli", "connection", "modify", ssid, "wifi-sec.key-mgmt", "wpa-psk", "wifi-sec.psk", password], capture_output=True)
+
+    subprocess.run(["sudo", "nmcli", "connection", "modify", ssid, "wifi.hidden", "yes"], capture_output=True)
+
+    logging.info("Executing blind handshake...")
+    result = subprocess.run(["sudo", "nmcli", "connection", "up", ssid], capture_output=True, text=True)
+
+    if result.returncode == 0:
+        logging.info(f"Successfully connected to network: {ssid}. Recycling active service layers...")
+        subprocess.run(["sudo", "systemctl", "restart", "epaper-dash.service"])
+    else:
+        logging.error(f"Handshake failed: {result.stderr}")
+        subprocess.run(["sudo", "reboot"])
+
+def generate_setup_preview(image_black):
+    """Converts the 1-bit QR code canvas to an RGB web image."""
+    if image_black is None: return Image.new("RGB", (128, 296), (255, 255, 255))
+    width, height = image_black.size
+    preview = Image.new("RGB", (width, height), (255, 255, 255))
+    pixels_preview = preview.load()
+    pixels_black = image_black.load()
+    for y in range(height):
+        for x in range(width):
+            if pixels_black[x, y] == 0:
+                pixels_preview[x, y] = (30, 30, 30)
+    return preview
+
+@app.route('/preview.png')
+def screen_preview():
+    global SetupImage
+    preview_img = generate_setup_preview(SetupImage)
+    img_io = io.BytesIO()
+    preview_img.save(img_io, 'PNG')
+    img_io.seek(0)
+    return send_file(img_io, mimetype='image/png', download_name='inknode_setup_qr.png')
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def captive_portal(path):
+    # Added the mirror-section HTML block to actually show the screenshot on the page
     return render_template_string("""
     <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>InkNode Setup</title>
-    <style>body{font-family:-apple-system,sans-serif;background-color:#0f172a;color:#f8fafc;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}
+    <style>body{font-family:-apple-system,sans-serif;background-color:#0f172a;color:#f8fafc;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box;}
     .box{background-color:#1e293b;padding:32px 24px;border-radius:16px;max-width:400px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
     input{width:100%;padding:12px;background-color:#0f172a;border:1px solid #334155;border-radius:8px;color:#fff;margin-bottom:16px;box-sizing:border-box;}
-    button{width:100%;padding:14px;background-color:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;}</style></head>
-    <body><div class="box"><h2>InkNode Setup</h2><p>Connect device to home network</p>
-    <form action="/connect" method="POST"><input type="text" name="ssid" placeholder="Wi-Fi SSID" required><input type="password" name="password" placeholder="Password"><button type="submit">Connect Device</button></form></div></body></html>
+    button{width:100%;padding:14px;background-color:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;}
+    .mirror-section{margin-top:24px;text-align:center;border-top:1px solid #334155;padding-top:24px;}
+    .btn-download{display:inline-block;padding:10px 16px;background-color:#475569;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;margin-top:12px;}
+    </style></head>
+    <body>
+        <div class="box">
+            <h2>InkNode Setup</h2>
+            <p style="color:#94a3b8; font-size: 14px; margin-bottom: 20px;">Connect device to home network</p>
+            <form action="/connect" method="POST">
+                <input type="text" name="ssid" placeholder="Wi-Fi SSID" required>
+                <input type="password" name="password" placeholder="Password">
+                <button type="submit">Connect Device</button>
+            </form>
+            
+            <div class="mirror-section">
+                <h3 style="margin-bottom:16px; font-size:15px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">E-Paper Mirror</h3>
+                <img src="/preview.png" alt="Hardware Display" style="width:100%; max-width:128px; aspect-ratio:128/296; border:2px solid #334155; border-radius:4px; image-rendering:pixelated; background:white;">
+                <br>
+                <a href="/preview.png" download="inknode_setup_qr.png" class="btn-download">📥 Download Screenshot</a>
+            </div>
+        </div>
+    </body></html>
     """)
 
 @app.route('/connect', methods=['POST'])
@@ -140,11 +221,20 @@ def connect_wifi():
 
 if __name__ == '__main__':
     time.sleep(10)
-    if check_internet():
-        logging.info("Online. Handing over to Dashboard...")
+    # Load environment variables to check the setup flag
+    env_config = load_env()
+    setup_status = env_config.get("INIT_SETUP", "enabled").strip().lower()
+
+    if setup_status == "disabled":
+        logging.info("INIT_SETUP is disabled in .env. Bypassing Captive Portal...")
         dashboard_path = os.path.join(BASE_DIR, "dashboard.py")
         subprocess.run([sys.executable, dashboard_path])
     else:
-        start_hotspot()
-        draw_qr_screen(SETUP_SSID, SETUP_PASS)
-        app.run(host='0.0.0.0', port=80)
+        if check_internet():
+            logging.info("Online. Handing over to Dashboard...")
+            dashboard_path = os.path.join(BASE_DIR, "dashboard.py")
+            subprocess.run([sys.executable, dashboard_path])
+        else:
+            start_hotspot()
+            draw_qr_screen(SETUP_SSID, SETUP_PASS)
+            app.run(host='0.0.0.0', port=80)
