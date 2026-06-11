@@ -1,27 +1,58 @@
 <div align="center">
-  <img src="assets/logo.svg" alt="InkNode Logo" width="180" />
-
-# InkNode
-
-**A clean, distraction-free room climate monitor and home automation dashboard for the Raspberry Pi.**
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-orange.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/)
 [![Hardware](https://img.shields.io/badge/Hardware-Raspberry_Pi-c2185b.svg)](https://www.raspberrypi.org/)
 
+<img src="assets/logo.svg" alt="InkNode Logo" width="300" />
+
+<h3 align="center">A clean, distraction-free room climate monitor and home automation dashboard for the Raspberry Pi</h3>
 </div>
 
----
+<img src="assets/inknode-screen.png" alt="InkNode Screen"/>
 
 ## 📖 What is InkNode?
 
-InkNode is a self-contained smart home appliance that acts as a dedicated environment dashboard. It reads local ambient conditions using a precise hardware sensor, pulls outdoor forecasts, and displays them on a paper-like electronic ink display. 
+InkNode gives you complete visibility into your home environment without adding another glowing screen to your life. If you want smart home data on your desk or nightstand but are tired of bright backlights, InkNode is the solution. It is a self-contained appliance that reads local ambient conditions via hardware sensors, pulls outdoor forecasts, and displays them on a calm, paper-like electronic ink display.
 
-With no bright backlights or glowing screens, it fits comfortably on a desk or nightstand. Under the hood, it functions as an independent node in your smart home setup—running a local web interface for easy configuration and streaming live telemetry straight to your existing home automation server over MQTT.
+Operating as an independent node, it provides a local web interface for effortless configuration and streams live telemetry directly to your existing home automation server over MQTT.
 
----
+## ✨ Core Pillars of InkNode
 
-## ⚙️ How It Works
+To deliver a seamless and calm experience, InkNode is built on three main principles: Distraction-Free Design, Frictionless Setup, and Flexible Architecture.
+
+### Distraction-Free Design
+- **High-Contrast, Swiss-Style UI:** A borderless layout inspired by classic minimalist design prioritizes clean typography and readability.
+
+- **Smart Color Layering:** Intentionally utilizes the e-paper's red ink for abstract weather icons and metric labels (`WIND`, `HUM`), preserving heavy black ink for critical data.
+
+
+### Frictionless Setup (Zero Headaches)
+
+- **Automated Headless Provisioning:** Forget about plugging in a monitor, keyboard, or manually editing configuration files on an SD card.
+
+- **Captive Setup Portal:** If InkNode cannot reach the internet on boot, it automatically launches a temporary Wi-Fi Access Point and displays a QR code on the e-paper screen. Scan it, enter your credentials in the local web portal, and you are online.
+
+- **Safe Rollbacks:** If a connection to your router fails, a background thread safely aborts and restores the setup portal so you are never locked out of your device.
+    
+### Flexible Architecture
+- **Local Web Dashboard:** Tweak geographic coordinates, customize panel headers, or update MQTT broker targets directly from your browser.
+
+- **Hot Reloading:** Saving changes automatically updates the system environment (`.env`) and restarts background loops immediately—no reboot required.
+
+- **Hardware Agnostic (HAL):** Display and sensor logic are cleanly isolated. You can easily swap the default 2.9" Waveshare drivers or AHTx0 code to support alternative I2C sensors (like the BME280) or different display sizes.
+
+- **Pre-Deployment Testing:** Test layout calculations and logic on your PC using mocked hardware states before deploying to a physical Raspberry Pi.
+
+### 📡 Decoupled Hardware & Automation
+
+-   **Hardware Agnostic (HAL):** The core display and sensor handling logic are cleanly isolated in `hal_display.py` and `hal_sensors.py`. You can easily swap out the default 2.9" Waveshare drivers or the AHTx0 code to support completely different display sizes or alternative I2C sensors (like the BME280 or DHT22).
+    
+-   **Pre-Deployment Testing:** Includes an independent test runner (`run_tests.py`) that uses mocked hardware states. This lets you test the layout calculations and application logic on a standard PC before deploying the code to a physical Pi.
+    
+## ⚙️ System Architecture: Under the Hood
+
+InkNode manages simultaneous background processes while ensuring the UI remains responsive and independent of network or hardware delays.
 
 ```mermaid
 graph TD
@@ -85,56 +116,25 @@ graph TD
     BROW <-->|Manages Settings / Dynamic .env| DASH
 ```
 
-## ✨ Core Features
+## 🛠️ Hardware Specifications & Wiring
 
-### 🎨 Clean Swiss-Style UI
+### What You Need
 
--   **High Contrast Hierarchy:** A borderless layout inspired by classic minimalist design principles, focusing entirely on clean typography.
-    
--   **Smart Color Layering:** Uses the e-paper's red ink layer intentionally for abstract weather icons and metric labels (`WIND`, `HUM`), leaving heavy black ink for easy-to-read numbers.
+To build a standalone InkNode device, gather the following components:
 
-### 🔌 Headless Wi-Fi Provisioning
+1. **Raspberry Pi** Zero W or Zero 2W (ideal for a compact footprint).
 
--   **No Headaches on First Boot:** You don't need to plug in a monitor or keyboard, and you don't need to write configuration files to your SD card.
-    
--   **Automated Setup Portal:** If InkNode cannot reach the internet on boot, it switches its Wi-Fi card into a temporary Access Point and displays a setup QR code on the e-paper screen. Scanning it opens a local web interface where you can securely type in your Wi-Fi credentials.
-    
--   **Safe Rollback:** If the connection to your router fails, a background thread cleanly safely aborts and restores the setup portal so you aren't locked out.
-    
+2. **Waveshare 2.9" E-Paper Module:** Must be the Black/White/Red Tri-Color version.
 
-### 📱 Local Web Dashboard
+3. **AHT25 or AHT20 Sensor:** I2C digital temperature and humidity module.
 
--   **Web UI Configuration:** Once connected to your local network, typing the device's IP address into a browser opens a clean dashboard.
-    
--   **On-the-Fly Editing:** Tweak your geographic coordinates, set custom panel headers, or update your MQTT broker targets directly from your browser.
-    
--   **Hot Reloading:** Saving changes automatically updates the system environment (`.env`) and restarts background loops immediately without needing a full system reboot.
-    
+4. **MicroSD Card:** 8GB or larger running Raspberry Pi OS Lite (32/64-bit).
 
-### 📡 Decoupled Hardware & Automation
+### Wiring Diagram
 
--   **Hardware Agnostic (HAL):** The core display and sensor handling logic are cleanly isolated in `hal_display.py` and `hal_sensors.py`. You can easily swap out the default 2.9" Waveshare drivers or the AHTx0 code to support completely different display sizes or alternative I2C sensors (like the BME280 or DHT22).
-    
--   **Pre-Deployment Testing:** Includes an independent test runner (`run_tests.py`) that uses mocked hardware states. This lets you test the layout calculations and application logic on a standard PC before deploying the code to a physical Pi.
-    
+Connect your Waveshare 2.9inch e-Paper Module (B) to your Raspberry Pi using the physical SPI pin layout mapped below.
 
-## 🛠️ Hardware Requirements
-
-To build a standalone InkNode device, you will need:
-
-1.  **Raspberry Pi** (Zero W or Zero 2 W are ideal for a compact footprint)
-    
-2.  **Waveshare 2.9" E-Paper Module** (Must be the Black/White/Red Tri-Color version)
-    
-3.  **AHT25 or AHT20 Sensor** (I2C digital temperature and humidity module)
-    
-4.  **MicroSD Card** (8GB or larger) running Raspberry Pi OS Lite (32/64-bit)
-
-## 🛠️ Hardware Wiring
-
-To assemble a standalone InkNode device, connect your **Waveshare 2.9inch e-Paper Module (B)** tri-color display to your Raspberry Pi using the physical SPI pin layout below. 
-
-For complete technical specifications and hardware driver updates, refer directly to the [Official Waveshare 2.9inch e-Paper Module (B) Manual](https://www.waveshare.com/wiki/2.9inch_e-Paper_Module_(B)_Manual).
+(For complete technical specifications, refer directly to the [Official Waveshare 2.9inch e-Paper Module (B) Manual.](https://www.waveshare.com/wiki/2.9inch_e-Paper_Module_(B)_Manual))
 
 ```mermaid
 graph LR
@@ -181,13 +181,19 @@ graph LR
 
 ## 🚀 Getting Started
 
-### 1. Prepare Your Interfaces
+### 1. Enable Hardware Interfaces
 
-Make sure the necessary hardware communication buses are enabled. Run `sudo raspi-config`, navigate to **Interface Options**, and ensure both **SPI** and **I2C** are active.
+Ensure the necessary hardware communication buses are active on your Raspberry Pi.
 
-### 2. Installation
+1. Run `sudo raspi-config` in your terminal.
 
-Clone the repository to your Raspberry Pi and execute the included setup script:
+2. Navigate to Interface Options.
+
+3. Enable both `SPI` and `I2C`
+
+### 2. Install and Execute
+
+Clone the repository and run the setup script to install dependencies and configure the environment automatically.
 
 ```bash
 git clone https://github.com/Ankitd013/InkNode.git
