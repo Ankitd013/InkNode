@@ -1,0 +1,140 @@
+name: Build Compact Offline Release Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static parted rsync xz-utils
+
+      - name: Download Pi OS Lite
+        run: |
+          wget --content-disposition https://downloads.raspberrypi.org/raspios_lite_armhf_latest
+          xz -d *.xz
+          mv *.img base_os.img
+
+      - name: Expand Image Temporarily
+        run: |
+          # Append temporary space for apt/pip installation overhead
+          dd if=/dev/zero bs=1M count=1500 >> base_os.img
+          sudo parted -s base_os.img resizepart 2 100%
+          
+          LOOP_DEV=$(sudo losetup --show -f -P base_os.img)
+          sudo e2fsck -f -y ${LOOP_DEV}p2
+          sudo resize2fs ${LOOP_DEV}p2
+          sudo losetup -d ${LOOP_DEV}
+
+      - name: Bake Application into Image (Chroot)
+        run: |
+          LOOP_DEV=$(sudo losetup --show -f -P base_os.img)
+          sudo mkdir -p /mnt/rootfs
+          sudo mount ${LOOP_DEV}p2 /mnt/rootfs
+          sudo mkdir -p /mnt/rootfs/boot/firmware
+          sudo mount ${LOOP_DEV}p1 /mnt/rootfs/boot/firmware
+          
+          sudo cp /usr/bin/qemu-arm-static /mnt/rootfs/usr/bin/
+          for dir in /dev /dev/pts /proc /sys /run; do sudo mount --bind $dir /mnt/rootfs$dir; done
+          
+          echo "dtparam=spi=on" | sudo tee -a /mnt/rootfs/boot/firmware/config.txt
+          echo "dtparam=i2c_arm=on" | sudo tee -a /mnt/rootfs/boot/firmware/config.txt
+          
+          sudo mkdir -p /mnt/rootfs/opt/InkNode
+          sudo rsync -a --exclude='base_os.img' --exclude='.git' . /mnt/rootfs/opt/InkNode
+          
+          sudo chroot /mnt/rootfs /bin/bash -c "
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y python3-venv python3-pip
+            
+            cd /opt/InkNode
+            python3 -m venv venv
+            venv/bin/pip install --upgrade pip
+            venv/bin/pip install -r requirements.txt
+            
+            cat > /etc/systemd/system/epaper-dash.service << 'EOF'
+            [Unit]
+            Description=InkNode E-Paper Dashboard Service
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=root
+            WorkingDirectory=/opt/InkNode
+            ExecStart=/opt/InkNode/venv/bin/python /opt/InkNode/boot_manager.py
+            Restart=on-failure
+            RestartSec=10
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+            
+            systemctl enable epaper-dash.service
+          "
+          
+          for dir in /run /sys /proc /dev/pts /dev; do sudo umount /mnt/rootfs$dir; done
+          sudo umount /mnt/rootfs/boot/firmware
+          sudo umount /mnt/rootfs
+          sudo losetup -d ${LOOP_DEV}
+
+      - name: Shrink Image to Fit Actual Data Only
+        run: |
+          echo "🧹 Trimming unused virtual space..."
+          LOOP_DEV=$(sudo losetup --show -f -P base_os.img)
+          
+          # 1. Check filesystem health
+          sudo e2fsck -f -y ${LOOP_DEV}p2
+          
+          # 2. Shrink ext4 filesystem to its absolute smallest possible size
+          sudo resize2fs -M ${LOOP_DEV}p2
+          
+          # 3. Read the new required size of the filesystem block layout
+          BLOCK_INFO=$(sudo dumpe2fs -h ${LOOP_DEV}p2 2>&1)
+          BLOCK_COUNT=$(echo "$BLOCK_INFO" | grep "Block count:" | awk '{print $3}')
+          BLOCK_SIZE=$(echo "$BLOCK_INFO" | grep "Block size:" | awk '{print $3}')
+          FS_SIZE_BYTES=$((BLOCK_COUNT * BLOCK_SIZE))
+          
+          PART_START_BYTES=$(sudo parted -s base_os.img unit B print | grep -E "^\s*2\s" | awk '{print $2}' | tr -d 'B')
+          NEW_END_BYTES=$((PART_START_BYTES + FS_SIZE_BYTES))
+          
+          # 4. THE BRUTE-FORCE FIX: Trick parted into thinking a human is typing, and pass a capital 'Yes'
+          echo "Yes" | sudo parted ---pretend-input-tty base_os.img resizepart 2 ${NEW_END_BYTES}B
+          
+          # Detach loop device safely
+          sudo losetup -d ${LOOP_DEV}
+          
+          # 5. Truncate the raw .img file binary structure to drop the trailing dead weight space
+          FINAL_IMAGE_SIZE=$((NEW_END_BYTES + 1024 * 1024 * 10)) # Add a safe 10MB pad at the very end
+          sudo truncate -s $FINAL_IMAGE_SIZE base_os.img
+          echo "✅ Image successfully optimized down to minimum size."
+
+      - name: Deep Algorithmic Compression (XZ)
+        run: |
+          echo "⚡ Launching multi-threaded LZMA2 encoder..."
+          # -9: Extreme compression flag matching distribution standards
+          # -T0: Instructs xz to utilize 100% of available runner CPU cores
+          xz -9 -T0 base_os.img
+          mv base_os.img.xz inknode-offline-os-${{ github.ref_name }}.img.xz
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: inknode-offline-os-${{ github.ref_name }}.img.xz
+          name: InkNode OS ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
