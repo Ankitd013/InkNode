@@ -69,11 +69,11 @@ def draw_qr_screen(ssid, password, ip_addr):
         LBlackimage.paste(qr_img, (qr_x, 55))
         
         fallback_ip = ip_addr if ip_addr else "10.42.0.1"
-        details_text = f"SSID: {ssid}\nPASS: {password}\nURL: http://{fallback_ip}"
+        details_text = f"SSID: {ssid}\nPASS: {password}\nURL: {fallback_ip}"
         
         # Calculate Y position dynamically so it sits just below the QR code
         details_y = 55 + qr_h + 15 
-        draw_black.multiline_text((10, details_y), details_text, font=small_font, fill=0, spacing=6)
+        draw_black.multiline_text((10, details_y), details_text, font=font, fill=0, spacing=6)
         # Safely copy the canvas into global memory AFTER it is drawn
         SetupImage = LBlackimage.copy()
         
