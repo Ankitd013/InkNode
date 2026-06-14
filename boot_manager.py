@@ -33,7 +33,7 @@ def check_internet():
     except subprocess.CalledProcessError:
         return False
 
-def draw_qr_screen(ssid, password):
+def draw_qr_screen(ssid, password, ip_addr):
     """Draws an offline onboarding QR code layout to the display panel."""
     global SetupImage
     
@@ -68,6 +68,12 @@ def draw_qr_screen(ssid, password):
         qr_x = (SCREEN_WIDTH - qr_w) // 2
         LBlackimage.paste(qr_img, (qr_x, 55))
         
+        fallback_ip = ip_addr if ip_addr else "10.42.0.1"
+        details_text = f"SSID: {ssid}\nPASS: {password}\nURL: http://{fallback_ip}"
+        
+        # Calculate Y position dynamically so it sits just below the QR code
+        details_y = 55 + qr_h + 15 
+        draw_black.multiline_text((10, details_y), details_text, font=small_font, fill=0, spacing=6)
         # Safely copy the canvas into global memory AFTER it is drawn
         SetupImage = LBlackimage.copy()
         
@@ -114,6 +120,7 @@ def start_hotspot():
             if os.path.exists(pid_file): subprocess.run(f"sudo kill -HUP $(cat {pid_file})", shell=True)
             else: subprocess.run("sudo killall -HUP dnsmasq", shell=True, stderr=subprocess.DEVNULL)
         except Exception: pass
+    return gateway_ip
 
 def network_switch_worker(ssid, password):
     """Background loop managing physical hardware interface connection handover."""
@@ -169,6 +176,21 @@ def generate_setup_preview(image_black):
                 pixels_preview[x, y] = (30, 30, 30)
     return preview
 
+def session_skip_worker():
+    """Tears down the hotspot and launches the dashboard for this session only."""
+    time.sleep(2) # Give the browser time to load the status message
+    logging.info("Skipping setup for current session. Tearing down hotspot...")
+    
+    # Drop the AP interface
+    subprocess.run(["sudo", "nmcli", "connection", "down", SETUP_SSID])
+    
+    # Launch the main application in the background
+    dashboard_path = os.path.join(BASE_DIR, "dashboard.py")
+    subprocess.Popen([sys.executable, dashboard_path])
+    
+    # Commit Seppuku: Kill the setup script so port 80 is freed
+    os._exit(0)
+
 @app.route('/preview.png')
 def screen_preview():
     global SetupImage
@@ -177,6 +199,16 @@ def screen_preview():
     preview_img.save(img_io, 'PNG')
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png', download_name='inknode_setup_qr.png')
+
+@app.route('/skip')
+def skip_session():
+    threading.Thread(target=session_skip_worker).start()
+    return render_template_string("""
+    <div style="font-family:sans-serif; text-align:center; padding:40px; color:#f8fafc; background:#0f172a; height:100vh;">
+        <h2>Skipping Setup...</h2>
+        <p style="color:#94a3b8;">Hotspot shutting down. Launching offline dashboard.</p>
+    </div>
+    """)
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -200,7 +232,11 @@ def captive_portal(path):
                 <input type="password" name="password" placeholder="Password">
                 <button type="submit">Connect Device</button>
             </form>
-            
+            <div style="margin-top: 16px; text-align: center;">
+                <a href="/skip" style="color:#94a3b8; text-decoration:none; font-size:14px; font-weight: 500;">
+                    Skip (This Session Only) &rarr;
+                </a>
+            </div>
             <div class="mirror-section">
                 <h3 style="margin-bottom:16px; font-size:15px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">E-Paper Mirror</h3>
                 <img src="/preview.png" alt="Hardware Display" style="width:100%; max-width:128px; aspect-ratio:128/296; border:2px solid #334155; border-radius:4px; image-rendering:pixelated; background:white;">
@@ -235,6 +271,6 @@ if __name__ == '__main__':
             dashboard_path = os.path.join(BASE_DIR, "dashboard.py")
             subprocess.run([sys.executable, dashboard_path])
         else:
-            start_hotspot()
-            draw_qr_screen(SETUP_SSID, SETUP_PASS)
+            gw_ip = start_hotspot()
+            draw_qr_screen(SETUP_SSID, SETUP_PASS, gw_ip)
             app.run(host='0.0.0.0', port=80)
