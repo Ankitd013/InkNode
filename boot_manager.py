@@ -181,15 +181,16 @@ def session_skip_worker():
     time.sleep(2) # Give the browser time to load the status message
     logging.info("Skipping setup for current session. Tearing down hotspot...")
     
+    try:
+        with open('/tmp/skip_inknode_setup', 'w') as f:
+            f.write('1')
+    except Exception as e:
+        logging.error(f"Failed to write session flag: {e}")
     # Drop the AP interface
     subprocess.run(["sudo", "nmcli", "connection", "down", SETUP_SSID])
     
     # Launch the main application in the background
-    dashboard_path = os.path.join(BASE_DIR, "dashboard.py")
-    subprocess.Popen([sys.executable, dashboard_path])
-    
-    # Commit Seppuku: Kill the setup script so port 80 is freed
-    os._exit(0)
+    subprocess.run(["sudo", "systemctl", "restart", "epaper-dash.service"])
 
 @app.route('/preview.png')
 def screen_preview():
@@ -260,8 +261,9 @@ if __name__ == '__main__':
     # Load environment variables to check the setup flag
     env_config = load_env()
     setup_status = env_config.get("INIT_SETUP", "enabled").strip().lower()
+    session_skipped = os.path.exists('/tmp/skip_inknode_setup')
 
-    if setup_status == "disabled":
+    if setup_status == "disabled" or session_skipped:
         logging.info("INIT_SETUP is disabled in .env. Bypassing Captive Portal...")
         dashboard_path = os.path.join(BASE_DIR, "dashboard.py")
         subprocess.run([sys.executable, dashboard_path])
