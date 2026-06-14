@@ -123,20 +123,6 @@ def start_hotspot():
     return gateway_ip
 
 def network_switch_worker(ssid, password):
-    """Background loop managing physical hardware interface connection handover."""
-    time.sleep(3)
-    subprocess.run(f'sudo nmcli connection down "{SETUP_SSID}"', shell=True)
-    subprocess.run("sudo nmcli device disconnect wlan0", shell=True, stderr=subprocess.DEVNULL)
-    
-    connect_cmd = f'sudo nmcli device wifi connect "{ssid}" password "{password}" name "{ssid}"'
-    result = subprocess.run(connect_cmd, shell=True, capture_output=True, text=True)
-    
-    if result.returncode == 0:
-        subprocess.run("sudo systemctl restart epaper-dash.service", shell=True)
-    else:
-        subprocess.run("sudo reboot", shell=True)
-
-def network_switch_worker(ssid, password):
     """Background execution loop managing physical hardware interface handover."""
     time.sleep(3)
     logging.info(f"Initiating network handoff to target SSID: {ssid}...")
