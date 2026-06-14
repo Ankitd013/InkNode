@@ -179,16 +179,38 @@ graph LR
     BUSY <---> |Busy Status Output| BCM24
 ```
 
-## 🚀 Getting Started
+## 🚀 Installation (The Zero-Touch Method)
+
+The easiest way to install InkNode is by using our pre-built, automated operating system image. This handles all I2C/SPI hardware enablement, repository cloning, and dependency installation automatically.
+
+### Step 1: Flash the OS
+1. Navigate to the **[Releases](../../releases/latest)** page of this repository.
+2. Download the latest `inknode-offline-os-vX.X.X.img.xz` asset.
+3. Flash the image directly to your SD Card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or [BalenaEtcher](https://etcher.balena.io/).
+
+### Step 2: Customization (Optional)
+By default, the image is configured with the username `inknode`, the password `raspberry`, and the Wi-Fi regulatory region set to `IN` (India). If you want to change these before your first boot:
+
+1. After flashing, safely eject and physically re-insert the SD card into your computer. 
+2. Open the newly visible drive (usually named `boot` or `bootfs`).
+3. **To change the Username/Password:** Open the `user-data` file in a text editor. 
+   * Find the `name: inknode` line and change `inknode` to your desired custom username.
+   * Find the `plain_text_password: raspberry` line and change `raspberry` to your desired secure password.
+4. **To change the Wi-Fi Region:** Open the `network-config` file in a text editor. Find the `regulatory-domain: "IN"` line and change the letters to your two-letter ISO country code (e.g., `"US"` for the United States, `"GB"` for the UK).
+5. Save the files and safely eject the SD card.
+
+### Step 3: Boot
+1. Put the SD card into your Raspberry Pi and turn it on. 
+2. The system will take roughly 3–5 minutes on its first boot to automatically expand the filesystem, configure your credentials, install Python packages, and launch the e-paper service.
+
+## Manual Installation (For Developers)
+If you are running an existing Raspberry Pi OS Lite installation and want to install InkNode manually for development, follow these steps:
 
 ### 1. Enable Hardware Interfaces
-
 Ensure the necessary hardware communication buses are active on your Raspberry Pi.
 
 1. Run `sudo raspi-config` in your terminal.
-
 2. Navigate to Interface Options.
-
 3. Enable both `SPI` and `I2C`
 
 ### 2. Install and Execute
@@ -202,3 +224,17 @@ cd InkNode
 chmod +x setup.sh
 sudo ./setup.sh
 ```
+
+## 🏗️ Automated Build Pipeline
+This repository utilizes GitHub Actions to automatically generate flashable OS images whenever a new version tag is pushed.
+
+The build pipeline:
+
+- Fetches the latest canonical Raspberry Pi OS Lite .img.xz stream directly from the official servers.
+Extracts and mounts the virtual partitions via native Linux loop devices.
+
+- Injects custom kernel overlays (dtparam=spi=on, dtparam=i2c_arm=on) directly into the FAT32 boot config.
+
+- Generates a user-data cloud-init script to execute the deployment sequence on first boot.
+
+- Repackages the customized image into a lightweight .img.xz asset and attaches it to the GitHub Release.

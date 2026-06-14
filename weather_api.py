@@ -27,7 +27,7 @@ def fetch_weather_data():
     
     if not api_key:
         logger.error("Weather API Error: Missing OWM_API_KEY in environment variables.")
-        return "0.0", "No Key", -1
+        return "0.0", "No API Key", -1
 
     # Keep the robust retry engine just in case your local Wi-Fi drops
     session = requests.Session()

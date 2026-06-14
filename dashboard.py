@@ -46,6 +46,7 @@ def web_dashboard():
 def save_config():
     """Catches post parameters from UI, rewrites environment configurations, recycles loops."""
     updated = {
+        "OWM_API_KEY": request.form.get("OWM_API_KEY", "").strip(),
         "MQTT_BROKER": request.form.get("MQTT_BROKER", ""),
         "MQTT_PORT": request.form.get("MQTT_PORT", "1883"),
         "MQTT_USER": request.form.get("MQTT_USER", ""),
